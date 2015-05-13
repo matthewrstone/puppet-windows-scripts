@@ -37,7 +37,22 @@ If (!($Source)) {
     $Source = "https://s3.amazonaws.com/pe-builds/released/$Version"
   }
 }
-If ($Source -match ('http://|https://')) { $isUrl = 'True' } else { $isURL = 'False' }
+
+# Validate $Source as URL or Other.
+If ($Source -match ('http://|https://')) {
+  $isUrl = 'True'
+  # Check for Server Core
+  If ((Get-WindowsFeature Server-Gui-Shell).Installed -match 'False') {
+    Write-Host "You are running Server Core."
+    $webCmd = "Invoke-WebRequest $uri -OutFile $WorkDirectory\$packageName -UseBasicParsing"
+  } else {
+    Write-Host "You are running Windows with a GUI."
+    $webCmd = "Invoke-WebRequest $uri -OutFile $WorkDirectory\$packageName"
+  }
+} else {
+  $isURL = 'False'
+}
+
 
 function setWorkDirectory() {
   If ((Test-Path $WorkDirectory) -match 'False') {
@@ -75,12 +90,12 @@ function getInstaller() {
 
 function installPuppetViaWeb() {
   Write-Host "Installing Puppet Enterprise $Version"
-  Invoke-Command -ScriptBlock { msiexec.exe /i $WorkDirectory/$packageName $installOptions }
+  Invoke-Command -ScriptBlock { msiexec.exe /qn $WorkDirectory\$packageName $installOptions }
 }
 
 function installPuppetViaFile() {
     Write-Host "Installing Puppet Enterprise $Version"
-    Invoke-Command -ScriptBlock { msiexec.exe /i $Source/$packageName $installOptions }
+    Invoke-Command -ScriptBlock { msiexec.exe /qn $Source\$packageName $installOptions }
 }  
   
 setWorkDirectory
