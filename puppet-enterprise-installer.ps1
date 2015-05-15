@@ -66,12 +66,12 @@ function getInstaller() {
 
 function installPuppetViaWeb() {
   Write-Host "Installing Puppet Enterprise $Version"
-  Invoke-Command -ScriptBlock { msiexec.exe /i $WorkDirectory/$packageName $installOptions }
+  Invoke-Command -ScriptBlock { msiexec.exe /i ./$WorkDirectory/$packageName $installOptions }
 }
 
 function installPuppetViaFile() {
     Write-Host "Installing Puppet Enterprise $Version"
-    Invoke-Command -ScriptBlock { msiexec.exe /i $Source/$packageName $installOptions }
+    Invoke-Command -ScriptBlock { msiexec.exe /i ./$Source/$packageName $installOptions }
 }  
   
 setWorkDirectory
