@@ -10,7 +10,8 @@
   [string]$Domain,
   [string]$Source,
   [string]$Version,
-  [string]$WorkDirectory
+  [string]$WorkDirectory,
+  [switch]$Watch
 )
 
 [System.Net.ServicePointManager]::ServerCertificateValidationCallback={$true}
@@ -26,7 +27,7 @@ If ($User) { $installOptions += "PUPPET_AGENT_ACCOUNT_USER=$User "}
 If ($Password) { $installOptions += "PUPPET_AGENT_ACCOUNT_PASSWORD=$Password "}
 If ($Domain) { $installOptions += "PUPPET_AGENT_ACCOUNT_DOMAIN=$Domain "}
 If (!($WorkDirectory)) { $WorkDirectory = 'c:\temp' }
-If (!($Version)) { $Version = '3.8.0' }
+If (!($Version)) { $Version = '3.7.2' }
 If (!($Source)) { $Source = "https://s3.amazonaws.com/pe-builds/released/$Version" }
 If ($Source -match ('http://|https://')) { $isUrl = 'True' } else { $isURL = 'False' }
 
@@ -76,3 +77,24 @@ function installPuppetViaFile() {
   
 setWorkDirectory
 validateSource
+
+If ($Watch) {
+ Write-Host "Waiting for initial Puppet run..."
+  While (!(Get-EventLog -LogName Application -Source Puppet -Newest 10 -ErrorAction SilentlyContinue)) {Sleep -milliseconds 5}
+  $logOld = Get-EventLog -LogName Application -Source Puppet -Newest 1
+  $time = $logOld.TimeWritten
+  $info = $logOld.EntryType
+  $msg = $logOld.Message
+  Write-Host "$time - $info - $msg"
+
+  while ((Get-EventLog -LogName Application -Source Puppet -Newest 1).Message -notmatch 'Finished catalog run|Could not request certificate') {  
+    $logNew = Get-EventLog -LogName Application -Source Puppet -Newest 1
+    If (($logNew.Index) -notmatch $logOld.Index) {
+      $time = $logNew.TimeWritten
+      $info = $logNew.EntryType
+      $msg = $logNew.Message
+      Write-Host "$time - $info - $msg"
+    }
+    $logOld = $logNew
+  }
+}
