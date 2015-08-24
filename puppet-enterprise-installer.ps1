@@ -93,7 +93,12 @@ If ($Watch) {
       $time = $logNew.TimeWritten
       $info = $logNew.EntryType
       $msg = $logNew.Message
-      Write-Host "$time - $info - $msg"
+      Switch ($info) {
+        "Error" { $fgColor = 'red' }
+        "Information" { $fgColor = 'green' }
+        "Warning" { $fgColor = 'yellow' } 
+      }
+      Write-Host "$time - $msg" -ForegroundColor $fgColor
     }
     $logOld = $logNew
   }
